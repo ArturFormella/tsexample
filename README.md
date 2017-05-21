@@ -13,18 +13,18 @@ Text Search Parser which split by whitespace only:
 
 Example:
 
-SELECT * FROM ts_parse(  'sample_parser', '3,6V 3.6V MySQL Win-98 xyz #$%^& test@test.com c:\docs /etc/lib 678678678');
+	SELECT * FROM ts_parse(  'sample_parser', '3,6V 3.6V MySQL Win-98 xyz #$%^& test@test.com c:\docs /etc/lib 678678678');
 
-tokid	token
-1	3,6V
-1	3.6V
-1	MySQL
-1	Win-98
-1	xyz
-1	#$%^&
-1	test@test.com
-1	c:\docs
-1	/etc/lib
-2	678678678
+	tokid	token
+	1	3,6V
+	1	3.6V
+	1	MySQL
+	1	Win-98
+	1	xyz
+	1	#$%^&
+	1	test@test.com
+	1	c:\docs
+	1	/etc/lib
+	2	678678678
 
 
