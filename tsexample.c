@@ -48,8 +48,6 @@ PG_FUNCTION_INFO_V1(sparser_start);
 PG_FUNCTION_INFO_V1(sparser_nexttoken);
 PG_FUNCTION_INFO_V1(sparser_end);
 PG_FUNCTION_INFO_V1(sparser_lextype);
-PG_FUNCTION_INFO_V1(cutdict_init);
-PG_FUNCTION_INFO_V1(cutdict_lexize);
 
 Datum
 sparser_start(PG_FUNCTION_ARGS)
@@ -76,8 +74,33 @@ sparser_nexttoken(PG_FUNCTION_ARGS)
 	{
 		int p_len = pg_mblen(status->p);
 
-		if (t_isalpha(status->p) || t_isdigit(status->p) ||
-			(p_len == 1 && *status->p == '_'))
+		/*
+		t_isalpha
+		t_isdigit
+		t_isprint	
+		iswalnum
+		iswalpha
+		iswblank
+		iswcntrl
+		iswctype
+		iswdigit
+		iswgraph
+		iswlower
+		iswprint
+		iswpunct
+		iswspace
+		iswupper
+		iswxdigit
+
+		t_isspace:
+			space (0x20, ' ')
+			form feed (0x0c, '\f')
+			line feed (0x0a, '\n')
+			carriage return (0x0d, '\r')
+			horizontal tab (0x09, '\t')
+			vertical tab (0x0b, '\v') 
+		*/
+		if (!t_isspace(status->p) || (p_len == 1 && *status->p == '_'))
 		{
 			if (!t_isdigit(status->p))
 				has_nondigit = true;
@@ -118,7 +141,6 @@ sparser_end(PG_FUNCTION_ARGS)
 	PG_RETURN_VOID();
 }
 
-
 Datum
 sparser_lextype(PG_FUNCTION_ARGS)
 {
@@ -135,109 +157,4 @@ sparser_lextype(PG_FUNCTION_ARGS)
 	descr[LAST_TOKEN_NUM].lexid = 0;
 
 	PG_RETURN_POINTER(descr);
-}
-
-typedef struct
-{
-	int		nbegin;
-	int		nend;
-} CutDict;
-
-Datum
-cutdict_init(PG_FUNCTION_ARGS)
-{
-	List	   *dictoptions = (List *) PG_GETARG_POINTER(0);
-	CutDict	   *d = (CutDict *) palloc0(sizeof(CutDict));
-	bool		nbegin_loaded = false,
-				nend_loaded = false;
-	ListCell   *l;
-
-	foreach(l, dictoptions)
-	{
-		DefElem    *defel = (DefElem *) lfirst(l);
-
-		if (pg_strcasecmp("nbegin", defel->defname) == 0)
-		{
-			if (nbegin_loaded)
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("multiple nbegin parameters")));
-			d->nbegin = atoi(defGetString(defel));
-			nbegin_loaded = true;
-		}
-		else if (pg_strcasecmp("nend", defel->defname) == 0)
-		{
-			if (nend_loaded)
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("multiple nend parameters")));
-			d->nend = atoi(defGetString(defel));
-			nend_loaded = true;
-		}
-		else
-		{
-			ereport(ERROR,
-					(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-					 errmsg("unrecognized cut dictionary parameter: \"%s\"",
-						    defel->defname)));
-		}
-	}
-
-	if (!nbegin_loaded || !nend_loaded)
-	{
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("both nbegin and nend parameters of cut dictionary must be specified")));
-	}
-
-	PG_RETURN_POINTER(d);
-}
-
-Datum
-cutdict_lexize(PG_FUNCTION_ARGS)
-{
-	CutDict	   *d = (CutDict *) PG_GETARG_POINTER(0);
-	char	   *in = (char *) PG_GETARG_POINTER(1);
-	int32		len = PG_GETARG_INT32(2);
-	char	   *txt;
-	int			strlen;
-	TSLexeme   *res;
-	int			residx = 0;
-	uint16		nvariant = 1;
-
-	res = palloc0(sizeof(TSLexeme) * 4);
-	txt = lowerstr_with_len(in, len);
-	strlen = pg_mbstrlen(txt);
-
-	if (strlen <= d->nbegin + d->nend)
-	{
-		res[residx].nvariant = nvariant;
-		res[residx++].lexeme = txt;
-		nvariant++;
-	}
-
-
-	if (strlen > d->nbegin)
-	{
-		int		i;
-		char   *p = txt;
-
-		for (i = 0; i < d->nbegin; i++)
-			p += pg_mblen(p);
-		res[residx].nvariant = nvariant;
-		res[residx++].lexeme = pnstrdup(txt, p - txt);
-	}
-
-	if (strlen > d->nend)
-	{
-		int		i;
-		char   *p = txt;
-
-		for (i = 0; i < strlen - d->nend; i++)
-			p += pg_mblen(p);
-		res[residx].nvariant = nvariant;
-		res[residx++].lexeme = pstrdup(p);
-	}
-
-	PG_RETURN_POINTER(res);
 }
