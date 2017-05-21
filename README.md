@@ -13,7 +13,8 @@ Text Search Parser which split by whitespace only:
 
 Example:
 
-	SELECT * FROM ts_parse(  'sample_parser', '3,6V 3.6V MySQL Win-98 xyz #$%^& test@test.com c:\docs /etc/lib 678678678');
+	SELECT * FROM ts_parse(  'sample_parser', '3,6V 3.6V MySQL Win-98 xyz #$%^& 
+	test@test.com c:\docs /etc/lib 678678678');
 
 	tokid	token
 	1	3,6V
@@ -28,3 +29,13 @@ Example:
 	2	678678678
 
 
+# Installation
+
+UBUNTU
+
+	git clone https://github.com/ArturFormella/tsexample
+	make
+	sudo make install
+SQL:
+
+	CREATE EXTENSION tsexample
