@@ -32,10 +32,13 @@ Example:
 # Installation
 
 UBUNTU
+Download PostgreSQL source code (double check version) and unzip it.
 
+	cd contrib
 	git clone https://github.com/ArturFormella/tsexample
+	cd tsexample
 	make
 	sudo make install
 SQL:
 
-	CREATE EXTENSION tsexample
+	CREATE EXTENSION IF NOT EXISTS tsexample WITH schema public;
